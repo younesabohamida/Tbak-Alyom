@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/meal-chooser/manifest.webmanifest">
+    <title>تطبيق اختيار الأطباق</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .spinner {
+            border-top-color: #3498db;
+            -webkit-animation: spin 1s infinite linear;
+            animation: spin 1s infinite linear;
+        }
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-sm bg-white rounded-3xl shadow-xl p-8 space-y-6 flex flex-col" style="min-height: 80vh; max-height: 90vh;">
+        
+        <!-- Loading Spinner -->
+        <div id="loadingPage" class="flex flex-col items-center justify-center h-full text-center hidden">
+            <svg class="animate-spin h-10 w-10 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-gray-500">جاري تحميل الأطباق...</p>
+        </div>
+
+        <!-- Home Page -->
+        <div id="homePage" class="flex flex-col items-center justify-center h-full text-center hidden">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-green-600 mb-4">طبق اليوم</h1>
+            <p class="text-gray-600 mb-8 text-lg">اختر عشوائياً 5 وجبات من قائمتك!</p>
+            <button id="startButton" class="w-full py-4 px-6 bg-gradient-to-r from-green-400 to-green-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50">
+                ابدأ
+            </button>
+            <button id="addMealButtonHome" class="w-full py-3 mt-4 bg-green-100 text-green-700 font-bold rounded-full shadow-md hover:bg-green-200 transition-colors duration-200 focus:outline-none">
+                إضافة طبق جديد
+            </button>
+            <button id="allMealsButtonHome" class="w-full py-3 mt-2 bg-green-100 text-green-700 font-bold rounded-full shadow-md hover:bg-green-200 transition-colors duration-200 focus:outline-none">
+                عرض كل الأطباق
+            </button>
+        </div>
+
+        <!-- Meals Page -->
+        <div id="mealsPage" class="flex flex-col h-full hidden">
+            <h2 class="text-3xl font-bold text-green-700 text-center mb-6">وجباتك لهذا اليوم</h2>
+            <ul id="selectedMealsList" class="flex-1 space-y-4 overflow-y-auto pr-2"></ul>
+            <div class="mt-8 space-y-4">
+                <button id="backToHomeButton" class="w-full py-3 bg-gray-200 text-gray-800 font-bold rounded-full shadow-md hover:bg-gray-300 transition-colors duration-200 focus:outline-none">
+                    اختيار جديد
+                </button>
+                <button id="addMealButtonMeals" class="w-full py-3 bg-green-100 text-green-700 font-bold rounded-full shadow-md hover:bg-green-200 transition-colors duration-200 focus:outline-none">
+                    إضافة طبق
+                </button>
+                <button id="allMealsButtonMeals" class="w-full py-3 bg-green-100 text-green-700 font-bold rounded-full shadow-md hover:bg-green-200 transition-colors duration-200 focus:outline-none">
+                    عرض كل الأطباق
+                </button>
+            </div>
+        </div>
+
+        <!-- Add Meal Page -->
+        <div id="addPage" class="flex flex-col h-full hidden">
+            <h2 class="text-3xl font-bold text-green-700 text-center mb-6">إضافة طبق جديد</h2>
+            <div class="flex-1 flex flex-col items-center space-y-4">
+                <input type="text" id="newMealNameInput" placeholder="اكتب اسم الطبق هنا..." class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 text-right">
+                <select id="newMealCategorySelect" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors duration-200 text-right"></select>
+                <button id="addMealFinalButton" class="w-full py-3 bg-gradient-to-r from-green-400 to-green-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50">
+                    أضف الطبق
+                </button>
+            </div>
+            <div class="mt-8">
+                <button id="backToHomeAddButton" class="w-full py-3 bg-gray-200 text-gray-800 font-bold rounded-full shadow-md hover:bg-gray-300 transition-colors duration-200 focus:outline-none">
+                    العودة للقائمة الرئيسية
+                </button>
+            </div>
+        </div>
+
+        <!-- All Meals Page - الصفحة المعدلة -->
+        <div id="allMealsPage" class="flex flex-col h-full hidden relative">
+            <div class="flex-1 overflow-y-auto pb-24">
+                <h2 class="text-3xl font-bold text-green-700 text-center mb-6">قائمة جميع الأطباق</h2>
+                <div id="categoryFilterButtons" class="flex flex-wrap justify-center gap-2 mb-6 overflow-x-auto pb-2"></div>
+                <ul id="allMealsList" class="space-y-4 px-2"></ul>
+            </div>
+            
+            <!-- زر العودة الثابت في الأسفل -->
+            <div class="sticky bottom-0 left-0 right-0 bg-white pt-4 pb-6 border-t border-gray-200 px-4">
+                <div class="space-y-4">
+                    <button id="backToHomeAllButton" class="w-full py-3 bg-gray-200 text-gray-800 font-bold rounded-full shadow-md hover:bg-gray-300 transition-colors duration-200 focus:outline-none">
+                        العودة للقائمة الرئيسية
+                    </button>
+                    <button id="addMealButtonAll" class="w-full py-3 bg-green-100 text-green-700 font-bold rounded-full shadow-md hover:bg-green-200 transition-colors duration-200 focus:outline-none">
+                        إضافة طبق جديد
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 justify-center items-center hidden">
+            <div class="relative p-8 w-96 mx-auto bg-white rounded-xl shadow-lg">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">تنبيه</h3>
+                <p id="modalMessage" class="text-sm text-gray-600 mb-6"></p>
+                <div class="flex justify-center">
+                    <button id="closeModalButton" class="py-2 px-4 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75">
+                        موافق
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Define a list of initial meals with categories
+        const initialMeals = [
+          // Syrian Cuisine
+          { name: 'الكبّة النيّة', category: 'مطبخ سوري' },
+          { name: 'الكبّة المقليّة', category: 'مطبخ سوري' },
+          { name: 'كبّة حلب', category: 'مطبخ سوري' },
+          { name: 'كبّة البطاطا', category: 'مطبخ سوري' },
+          { name: 'كبّة الحلوب', category: 'مطبخ سوري' },
+          { name: 'كبّة اللبن', category: 'مطبخ سوري' },
+          { name: 'كبّة سماقية', category: 'مطبخ سوري' },
+          { name: 'كبّة دراوين', category: 'مطبخ سوري' },
+          { name: 'ورق عنب (يبرق)', category: 'مطبخ سوري' },
+          { name: 'يالنجي', category: 'مطبخ سوري' },
+          { name: 'كوسا محشي', category: 'مطبخ سوري' },
+          { name: 'شيخ المحشي', category: 'مطبخ سوري' },
+          { name: 'باذنجان محشي', category: 'مطبخ سوري' },
+          { name: 'ملفوف محشي', category: 'مطبخ سوري' },
+          { name: 'بندورة وفلفل محشي', category: 'مطبخ سوري' },
+          { name: 'فتّة الحمص', category: 'مطبخ سوري' },
+          { name: 'فتّة الدجاج', category: 'مطبخ سوري' },
+          { name: 'فتّة الباذنجان', category: 'مطبخ سوري' },
+          { name: 'فتة اللبن أو الزيت', category: 'مطبخ سوري' },
+          { name: 'المقلوبة', category: 'مطبخ سوري' },
+          { name: 'المجدرة', category: 'مطبخ سوري' },
+          { name: 'المجدرة البيضاء', category: 'مطبخ سوري' },
+          { name: 'برغل باللحمة أو الدجاج', category: 'مطبخ سوري' },
+          { name: 'الفريكة', category: 'مطبخ سوري' },
+          { name: 'رز بالكستناء', category: 'مطبخ سوري' },
+          { name: 'مسقعة الباذنجان', category: 'مطبخ سوري' },
+          { name: 'كوارع', category: 'مطبخ سوري' },
+          { name: 'رقاق لحم', category: 'مطبخ سوري' },
+          { name: 'بامية باللحمة', category: 'مطبخ سوري' },
+          { name: 'الششبرك', category: 'مطبخ سوري' },
+          { name: 'باسمشكات', category: 'مطبخ سوري' },
+          { name: 'الكويسات', category: 'مطبخ سوري' },
+          { name: 'أرمان باللبن', category: 'مطبخ سوري' },
+          { name: 'رشتاية العدس', category: 'مطبخ سوري' },
+          { name: 'يهودي مسافر', category: 'مطبخ سوري' },
+          { name: 'مسقعة الكماي', category: 'مطبخ سوري' },
+          { name: 'الزنانة', category: 'مطبخ سوري' },
+          { name: 'المكمور', category: 'مطبخ سوري' },
+          { name: 'كباب حلب', category: 'مطبخ سوري' },
+          { name: 'كباب مشوي', category: 'مطبخ سوري' },
+          { name: 'كباب عربي', category: 'مطبخ سوري' },
+          { name: 'كباب بلدي', category: 'مطبخ سوري' },
+          { name: 'كباب ملكي', category: 'مطبخ سوري' },
+          { name: 'شاورما لحم', category: 'مطبخ سوري' },
+          { name: 'شاورما دجاج', category: 'مطبخ سوري' },
+          { name: 'دجاج مشوي', category: 'مطبخ سوري' },
+          { name: 'قطع لحم ضأن مشوية', category: 'مطبخ سوري' },
+          { name: 'الكفتة المشوية أو المقلية', category: 'مطبخ سوري' },
+          { name: 'المعلاق المطجن', category: 'مطبخ سوري' },
+          { name: 'الفوارغ', category: 'مطبخ سوري' },
+          
+          // Turkish Cuisine
+          { name: 'إسكندر كباب', category: 'مطبخ تركي' },
+          { name: 'أضنة كباب', category: 'مطبخ تركي' },
+          { name: 'تشي كفته', category: 'مطبخ تركي' },
+          { name: 'البوريك', category: 'مطبخ تركي' },
+          { name: 'البيدا', category: 'مطبخ تركي' },
+          { name: 'مانتي', category: 'مطبخ تركي' },
+          { name: 'كومبير', category: 'مطبخ تركي' },
+          { name: 'سميط', category: 'مطبخ تركي' },
+          { name: 'سو بوريك', category: 'مطبخ تركي' },
+          { name: 'لاحماكون', category: 'مطبخ تركي' },
+          { name: 'كوكوريتش', category: 'مطبخ تركي' },
+          { name: 'الدونر', category: 'مطبخ تركي' },
+          { name: 'التانتوني', category: 'مطبخ تركي' },
+          { name: 'المندي التركي', category: 'مطبخ تركي' },
+          { name: 'شيش طاووق', category: 'مطبخ تركي' },
+          { name: 'دوندورما', category: 'مطبخ تركي' },
+          { name: 'الكستناء المشوية', category: 'مطبخ تركي' },
+          { name: 'بصمة', category: 'مطبخ تركي' },
+          { name: 'عصير الشلغم', category: 'مطبخ تركي' },
+
+          // Western Cuisine
+          { name: 'بيتزا', category: 'مطبخ غربي' },
+          { name: 'باستا', category: 'مطبخ غربي' },
+          { name: 'همبرجر', category: 'مطبخ غربي' },
+          { name: 'فاهيتا الدجاج', category: 'مطبخ غربي' },
+          { name: 'اللازانيا', category: 'مطبخ غربي' },
+          { name: 'روست بيف', category: 'مطبخ غربي' },
+          { name: 'كاري الدجاج', category: 'مطبخ غربي' },
+          { name: 'تاكو', category: 'مطبخ غربي' },
+          { name: 'بوريتو', category: 'مطبخ غربي' },
+
+          // Appetizers
+          { name: 'المحمرة', category: 'مقبلات' },
+          { name: 'التبولة', category: 'مقبلات' },
+          { name: 'الفتوش', category: 'مقبلات' },
+          { name: 'البابا غنوج', category: 'مقبلات' },
+          { name: 'الحمص بالطحينة', category: 'مقبلات' },
+          { name: 'اللبنية', category: 'مقبلات' },
+          { name: 'سلطة الراهب', category: 'مقبلات' },
+          { name: 'متبل كوسا', category: 'مقبلات' },
+          { name: 'سجق', category: 'مقبلات' },
+          { name: 'مقانيق', category: 'مقبلات' },
+          { name: 'الفول المدمس', category: 'مقبلات' },
+          { name: 'الفلافل', category: 'مقبلات' },
+          { name: 'السلق بالزيت والليمون', category: 'مقبلات' },
+          { name: 'بامية بالزيت', category: 'مقبلات' },
+          { name: 'مكمور الباذنجان', category: 'مقبلات' },
+          { name: 'مكدوس الباذنجان', category: 'مقبلات' },
+
+          // Soups
+          { name: 'شوربة العدس', category: 'شوربات' },
+          { name: 'شوربة الفريكة', category: 'شوربات' },
+          { name: 'شوربة رأس عصفور', category: 'شوربات' },
+          { name: 'شوربة لسان عصفور بالخضار', category: 'شوربات' },
+          { name: 'شوربة البصل الفرنسية', category: 'شوربات' },
+          { name: 'شوربة الطماطم بالكريمة', category: 'شوربات' },
+
+          // Pies & pastries
+          { name: 'مناقيش زعتر', category: 'فطائر ومعجنات' },
+          { name: 'مناقيش جبنة', category: 'فطائر ومعجنات' },
+          { name: 'مناقيش لحم مفروم', category: 'فطائر ومعجنات' },
+          { name: 'اللحمة بعجين', category: 'فطائر ومعجنات' },
+          { name: 'الصفيحة الحمصية', category: 'فطائر ومعجنات' },
+          { name: 'الصفيحة الشامية', category: 'فطائر ومعجنات' },
+          { name: 'فطيرة الجبنة العكاوي', category: 'فطائر ومعجنات' },
+          { name: 'فطيرة السبانخ', category: 'فطائر ومعجنات' },
+          { name: 'الكشك', category: 'فطائر ومعجنات' },
+          { name: 'عيش السرايا', category: 'فطائر ومعجنات' },
+          { name: 'الخبز باللحم', category: 'فطائر ومعجنات' },
+          
+          // Desserts
+          { name: 'البقلاوة', category: 'حلويات' },
+          { name: 'الكنافة', category: 'حلويات' },
+          { name: 'القطايف', category: 'حلويات' },
+          { name: 'المهلبية', category: 'حلويات' },
+          { name: 'الأرز بالحليب', category: 'حلويات' },
+          { name: 'هريسة السميد', category: 'حلويات' },
+          { name: 'الشعيبيات', category: 'حلويات' },
+          { name: 'حلاوة الجبن', category: 'حلويات' },
+          { name: 'كيك الشوكولاتة', category: 'حلويات' },
+          { name: 'فطيرة التفاح', category: 'حلويات' },
+          { name: 'تيراميسو', category: 'حلويات' },
+
+          // Drinks
+          { name: 'قهوة عربية', category: 'مشروبات' },
+          { name: 'شاي بالنعناع', category: 'مشروبات' },
+          { name: 'الزهورات', category: 'مشروبات' },
+          { name: 'شراب التمر هندي', category: 'مشروبات' },
+          { name: 'شراب الخروب', category: 'مشروبات' },
+          { name: 'شراب السوس', category: 'مشروبات' },
+          { name: 'حريرة الجدق', category: 'مشروبات' },
+        ];
+        
+        const allCategories = ['الكل', 'مطبخ سوري', 'مطبخ تركي', 'مطبخ غربي', 'مقبلات', 'شوربات', 'فطائر ومعجنات', 'حلويات', 'مشروبات'];
+
+        // App state variables
+        let meals = initialMeals; // Initialize with default meals
+        let db = null;
+        let auth = null;
+        let userId = null;
+        let selectedCategory = 'الكل';
+        let isDataLoaded = false;
+        let hasInitialized = false;
+
+        // Get DOM elements
+        const loadingPage = document.getElementById('loadingPage');
+        const homePage = document.getElementById('homePage');
+        const mealsPage = document.getElementById('mealsPage');
+        const addPage = document.getElementById('addPage');
+        const allMealsPage = document.getElementById('allMealsPage');
+        const modal = document.getElementById('modal');
+        const modalMessage = document.getElementById('modalMessage');
+        
+        // Buttons
+        const startButton = document.getElementById('startButton');
+        const backToHomeButton = document.getElementById('backToHomeButton');
+        const addMealButtonHome = document.getElementById('addMealButtonHome');
+        const addMealButtonMeals = document.getElementById('addMealButtonMeals');
+        const addMealButtonAll = document.getElementById('addMealButtonAll');
+        const allMealsButtonHome = document.getElementById('allMealsButtonHome');
+        const allMealsButtonMeals = document.getElementById('allMealsButtonMeals');
+        const backToHomeAddButton = document.getElementById('backToHomeAddButton');
+        const backToHomeAllButton = document.getElementById('backToHomeAllButton');
+        const addMealFinalButton = document.getElementById('addMealFinalButton');
+        const closeModalButton = document.getElementById('closeModalButton');
+        
+        // Forms and lists
+        const selectedMealsList = document.getElementById('selectedMealsList');
+        const newMealNameInput = document.getElementById('newMealNameInput');
+        const newMealCategorySelect = document.getElementById('newMealCategorySelect');
+        const allMealsList = document.getElementById('allMealsList');
+        const categoryFilterButtons = document.getElementById('categoryFilterButtons');
+
+        // Functions to manage page visibility
+        const showPage = (pageToShow) => {
+            const pages = [loadingPage, homePage, mealsPage, addPage, allMealsPage];
+            pages.forEach(page => page.classList.add('hidden'));
+            pageToShow.classList.remove('hidden');
+        };
+
+        const showModal = (message) => {
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        const hideModal = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        // Initialize Firebase on window load
+        window.onload = async () => {
+            showPage(loadingPage);
+            
+            // Immediately show default meals while loading
+            populateCategorySelect();
+            renderCategoryFilterButtons();
+            renderAllMeals('الكل');
+
+            try {
+                if (typeof __firebase_config !== 'undefined' && typeof __app_id !== 'undefined') {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    // Sign in (anonymous or with custom token)
+                    const userCredential = typeof __initial_auth_token !== 'undefined' ? 
+                        await signInWithCustomToken(auth, __initial_auth_token) :
+                        await signInAnonymously(auth);
+
+                    userId = userCredential.user.uid;
+                    
+                    // Setup Firestore listener
+                    const mealsCollectionRef = collection(db, `artifacts/${__app_id}/users/${userId}/meals`);
+                    
+                    // Check if we have any meals in Firestore
+                    const snapshot = await getDocs(mealsCollectionRef);
+                    
+                    if (snapshot.empty) {
+                        // Add initial meals to Firestore
+                        const batchPromises = initialMeals.map(meal => 
+                            addDoc(mealsCollectionRef, meal)
+                        );
+                        await Promise.all(batchPromises);
+                    }
+                    
+                    // Setup real-time listener
+                    onSnapshot(mealsCollectionRef, (snapshot) => {
+                        const fetchedMeals = [];
+                        snapshot.forEach(doc => {
+                            fetchedMeals.push({ id: doc.id, ...doc.data() });
+                        });
+                        meals = fetchedMeals;
+                        renderAllMeals(selectedCategory);
+                    });
+                    
+                    isDataLoaded = true;
+                    showPage(homePage);
+                    
+                } else {
+                    console.warn("Firebase config is missing. Using local data only.");
+                    showPage(homePage);
+                }
+            } catch (error) {
+                console.error("Initialization error:", error);
+                showModal("حدث خطأ في الاتصال بالخادم. يتم استخدام البيانات المحلية.");
+                showPage(homePage);
+            }
+        };
+
+        // Get 5 random, unique meals
+        const getRandomMeals = () => {
+            if (meals.length < 5) {
+                showModal("الرجاء إضافة المزيد من الأطباق (5 على الأقل) لتتمكن من الاختيار.");
+                return;
+            }
+            const shuffled = [...meals].sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 5);
+            
+            selectedMealsList.innerHTML = '';
+            selected.forEach((meal, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center bg-gray-50 p-4 rounded-xl shadow-sm transform hover:scale-105 transition-transform duration-200';
+                li.innerHTML = `<span class="text-green-500 font-extrabold text-2xl mr-4">${index + 1}.</span><span class="text-lg text-gray-800 font-medium">${meal.name}</span>`;
+                selectedMealsList.appendChild(li);
+            });
+            showPage(mealsPage);
+        };
+
+        // Add a new meal to Firestore
+        const addMeal = async () => {
+            const newMealName = newMealNameInput.value.trim();
+            const newMealCategory = newMealCategorySelect.value;
+            
+            if (newMealName === '') {
+                showModal("الرجاء إدخال اسم للطبق.");
+                return;
+            }
+            
+            if (db && userId) {
+                try {
+                    const mealsCollectionRef = collection(db, `artifacts/${__app_id}/users/${userId}/meals`);
+                    await addDoc(mealsCollectionRef, { 
+                        name: newMealName, 
+                        category: newMealCategory 
+                    });
+                    newMealNameInput.value = '';
+                    showPage(homePage);
+                } catch (error) {
+                    console.error("Error adding meal:", error);
+                    showModal("حدث خطأ أثناء إضافة الطبق: " + error.message);
+                }
+            } else {
+                // If Firebase isn't available, add to local array
+                meals.push({
+                    name: newMealName,
+                    category: newMealCategory
+                });
+                newMealNameInput.value = '';
+                showPage(homePage);
+                renderAllMeals(selectedCategory);
+            }
+        };
+        
+        // Render all meals based on category filter
+        const renderAllMeals = (category) => {
+            selectedCategory = category;
+            const filteredMeals = selectedCategory === 'الكل' ? meals : meals.filter(meal => meal.category === selectedCategory);
+            const sortedMeals = [...filteredMeals].sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+            allMealsList.innerHTML = '';
+            if (sortedMeals.length > 0) {
+                sortedMeals.forEach((meal, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center bg-gray-50 p-4 rounded-xl shadow-sm transform hover:scale-105 transition-transform duration-200';
+                    li.innerHTML = `
+                        <span class="text-green-500 font-extrabold text-2xl mr-4">${index + 1}.</span>
+                        <div class="flex-1">
+                            <span class="text-lg text-gray-800 font-medium">${meal.name}</span>
+                            <p class="text-sm text-gray-500 mt-1">${meal.category}</p>
+                        </div>
+                    `;
+                    allMealsList.appendChild(li);
+                });
+            } else {
+                allMealsList.innerHTML = `<p class="text-center text-gray-500 py-10">لا توجد أطباق في هذا التصنيف.</p>`;
+            }
+            
+            // Update button styles
+            const buttons = categoryFilterButtons.querySelectorAll('button');
+            buttons.forEach(button => {
+                if (button.dataset.category === selectedCategory) {
+                    button.className = 'px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 bg-green-600 text-white shadow-md';
+                } else {
+                    button.className = 'px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300';
+                }
+            });
+            
+            // Scroll to top when category changes
+            document.querySelector('#allMealsPage > div').scrollTo(0, 0);
+        };
+
+        // Populate category dropdown for adding new meals
+        const populateCategorySelect = () => {
+            newMealCategorySelect.innerHTML = '';
+            const categoriesForAdd = allCategories.slice(1); // Exclude 'الكل'
+            categoriesForAdd.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                newMealCategorySelect.appendChild(option);
+            });
+        };
+
+        // Render category filter buttons
+        const renderCategoryFilterButtons = () => {
+            categoryFilterButtons.innerHTML = '';
+            allCategories.forEach(cat => {
+                const button = document.createElement('button');
+                button.textContent = cat;
+                button.dataset.category = cat;
+                button.className = `px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 ${cat === 'الكل' ? 'bg-green-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
+                button.onclick = () => {
+                    renderAllMeals(cat);
+                    showPage(allMealsPage);
+                };
+                categoryFilterButtons.appendChild(button);
+            });
+        };
+
+        // Event Listeners
+        startButton.addEventListener('click', getRandomMeals);
+        backToHomeButton.addEventListener('click', () => showPage(homePage));
+        backToHomeAddButton.addEventListener('click', () => showPage(homePage));
+        backToHomeAllButton.addEventListener('click', () => showPage(homePage));
+        addMealButtonHome.addEventListener('click', () => showPage(addPage));
+        addMealButtonMeals.addEventListener('click', () => showPage(addPage));
+        addMealButtonAll.addEventListener('click', () => showPage(addPage));
+        allMealsButtonHome.addEventListener('click', () => {
+            renderAllMeals('الكل');
+            showPage(allMealsPage);
+        });
+        allMealsButtonMeals.addEventListener('click', () => {
+            renderAllMeals('الكل');
+            showPage(allMealsPage);
+        });
+        addMealFinalButton.addEventListener('click', addMeal);
+        closeModalButton.addEventListener('click', hideModal);
+    </script>
+</body>
+</html>
